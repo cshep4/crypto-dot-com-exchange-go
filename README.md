@@ -72,13 +72,42 @@ if err != nil {
 
 ## Supported API ([Official Docs](https://exchange-docs.crypto.com/spot/index.html)):
 
-The table of listed APIs that are supported by this package.
+The supported APIs for each module are listed below.
 
 **✅ - API is supported**
 
 **⚠️ - API is not yet supported (hopefully should be available soon!)**
 
+Each API module is separated into separate interfaces, however the `CryptoDotComExchange` interface can be used to access all methods:
+```go
+// CryptoDotComExchange is a Crypto.com Exchange client for all available APIs.
+type CryptoDotComExchange interface {
+    // UpdateConfig can be used to update the configuration of the client object.
+    // (e.g. change api key, secret key, environment, etc).
+    UpdateConfig(apiKey string, secretKey string, opts ...ClientOption) error
+    CommonAPI
+    SpotTradingAPI
+    MarginTradingAPI
+    DerivativesTransferAPI
+    SubAccountAPI
+    Websocket
+}
+```
+
+Client interfaces can be found in [client.go](client.go).
+
 ### Common API
+
+```go
+// CommonAPI is a Crypto.com Exchange client for Common API.
+type CommonAPI interface {
+    // GetInstruments provides information on all supported instruments (e.g. BTC_USDT).
+    GetInstruments(ctx context.Context) ([]Instrument, error)
+    // GetTickers fetches the public tickers for an instrument (e.g. BTC_USDT).
+    // instrument can be left blank to retrieve tickers for ALL instruments.
+    GetTickers(ctx context.Context, instrument string) ([]Ticker, error)
+}
+```
 
 | Method                           | Support |
 :--------------------------------: | :-----: |
@@ -97,6 +126,19 @@ The table of listed APIs that are supported by this package.
 
 ### Spot Trading API
 
+```go
+// SpotTradingAPI is a Crypto.com Exchange client for Spot Trading API.
+type SpotTradingAPI interface {
+    // GetAccountSummary returns the account balance of a user for a particular token.
+    // currency can be left blank to retrieve balances for ALL tokens.
+    GetAccountSummary(ctx context.Context, currency string) ([]Account, error)
+    // CreateOrder creates a new BUY or SELL order on the Exchange.
+    // This call is asynchronous, so the response is simply a confirmation of the request.
+    // The user.order subscription can be used to check when the order is successfully created.
+    CreateOrder(ctx context.Context, req CreateOrderRequest) (*CreateOrderResult, error)
+}
+```
+
 | Method                           | Support |
 :--------------------------------: | :-----: |
 | private/get-account-summary      | ✅       |
@@ -109,6 +151,12 @@ The table of listed APIs that are supported by this package.
 | private/get-trades               | ⚠️       |
 
 ### Margin Trading API
+
+```go
+// MarginTradingAPI is a Crypto.com Exchange client for Margin Trading API.
+type MarginTradingAPI interface {
+}
+```
 
 | Method                                 | Support |
 :--------------------------------------: | :-----: |
@@ -135,6 +183,12 @@ The table of listed APIs that are supported by this package.
 
 ### Derivatives Transfer API
 
+```go
+// DerivativesTransferAPI is a Crypto.com Exchange client for Derivatives Transfer API.
+type DerivativesTransferAPI interface {
+}
+```
+
 | Method                             | Support |
 :----------------------------------: | :-----: |
 | private/deriv/transfer             | ⚠️       |
@@ -142,19 +196,33 @@ The table of listed APIs that are supported by this package.
 
 ### Sub-account API
 
+```go
+// SubAccountAPI is a Crypto.com Exchange client for Sub-account API.
+type SubAccountAPI interface {
+}
+```
+
 | Method                                  | Support |
 :---------------------------------------: | :-----: |
 | private/subaccount/get-sub-accounts     | ⚠️       |
 | private/subaccount/get-transfer-history | ⚠️       |
 | private/subaccount/transfer             | ⚠️       |
 
-### Websocket Heartbeats
+### Websocket
+
+```go
+// Websocket is a Crypto.com Exchange client websocket methods & channels.
+type Websocket interface {
+}
+```
+
+#### Websocket Heartbeats
 
 | Method                   | Support |
 :------------------------: | :-----: |
 | public/respond-heartbeat | ⚠️       |
 
-### Websocket Subscriptions
+#### Websocket Subscriptions
 
 | Channel                                  | Support |
 :----------------------------------------: | :-----: |
