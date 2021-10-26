@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cshep4/crypto-dot-com-exchange-go"
+	"github.com/cshep4/crypto-dot-com-exchange-go/errors"
 )
 
 type roundTripper struct {
@@ -58,7 +59,7 @@ func TestNew_Error(t *testing.T) {
 			args: args{
 				apiKey: "",
 			},
-			expectedErr: cdcexchange.InvalidParameterError{Parameter: "apiKey", Reason: "cannot be empty"},
+			expectedErr: errors.InvalidParameterError{Parameter: "apiKey", Reason: "cannot be empty"},
 		},
 		{
 			name: "error when secret key is empty",
@@ -66,7 +67,7 @@ func TestNew_Error(t *testing.T) {
 				apiKey:    "api key",
 				secretKey: "",
 			},
-			expectedErr: cdcexchange.InvalidParameterError{Parameter: "secretKey", Reason: "cannot be empty"},
+			expectedErr: errors.InvalidParameterError{Parameter: "secretKey", Reason: "cannot be empty"},
 		},
 	}
 	for _, tt := range tests {
@@ -154,7 +155,7 @@ func TestClient_UpdateConfig_Error(t *testing.T) {
 			args: args{
 				apiKey: "",
 			},
-			expectedErr: cdcexchange.InvalidParameterError{Parameter: "apiKey", Reason: "cannot be empty"},
+			expectedErr: errors.InvalidParameterError{Parameter: "apiKey", Reason: "cannot be empty"},
 		},
 		{
 			name: "error when secret key is empty",
@@ -162,17 +163,17 @@ func TestClient_UpdateConfig_Error(t *testing.T) {
 				apiKey:    "api key",
 				secretKey: "",
 			},
-			expectedErr: cdcexchange.InvalidParameterError{Parameter: "secretKey", Reason: "cannot be empty"},
+			expectedErr: errors.InvalidParameterError{Parameter: "secretKey", Reason: "cannot be empty"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := cdcexchange.Client{}
+			client, err := cdcexchange.New("another api key", "another secret key")
+			require.NoError(t, err)
 
-			err := client.UpdateConfig(tt.apiKey, tt.secretKey)
+			err = client.UpdateConfig(tt.apiKey, tt.secretKey)
 			require.Error(t, err)
 
-			assert.Empty(t, client)
 			assert.Equal(t, tt.expectedErr, err)
 		})
 	}
@@ -204,6 +205,15 @@ func TestClient_UpdateConfig_Success(t *testing.T) {
 			args: args{
 				apiKey:    "api key",
 				secretKey: "secret key",
+				opts:      []cdcexchange.ClientOption{cdcexchange.WithProductionEnvironment()},
+			},
+			expectedBaseURL: cdcexchange.ProductionBaseURL,
+		},
+		{
+			name: "successfully updates production client",
+			args: args{
+				apiKey:    "api key",
+				secretKey: "secret key",
 			},
 			expectedBaseURL: cdcexchange.ProductionBaseURL,
 		},
@@ -220,9 +230,10 @@ func TestClient_UpdateConfig_Success(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := cdcexchange.Client{}
+			client, err := cdcexchange.New("another api key", "another secret key")
+			require.NoError(t, err)
 
-			err := client.UpdateConfig(tt.apiKey, tt.secretKey, tt.opts...)
+			err = client.UpdateConfig(tt.apiKey, tt.secretKey, tt.opts...)
 			require.NoError(t, err)
 			require.NotEmpty(t, client)
 

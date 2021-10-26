@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/cshep4/crypto-dot-com-exchange-go/internal/api"
 )
 
 const (
@@ -16,8 +18,8 @@ type (
 	// TickerResponse is the base response returned from the public/get-ticker API
 	// when no instrument is specified.
 	TickerResponse struct {
-		// APIBaseResponse is the common response fields.
-		APIBaseResponse
+		// api.BaseResponse is the common response fields.
+		api.BaseResponse
 		// Result is the response attributes of the endpoint.
 		Result TickerResult `json:"result"`
 	}
@@ -30,8 +32,8 @@ type (
 	// SingleTickerResponse is the base response returned from the public/get-ticker API
 	// when an instrument is specified.
 	SingleTickerResponse struct {
-		// APIBaseResponse is the common response fields.
-		APIBaseResponse
+		// api.BaseResponse is the common response fields.
+		api.BaseResponse
 		// Result is the response attributes of the endpoint.
 		Result SingleTickerResult `json:"result"`
 	}
@@ -69,7 +71,7 @@ type (
 // GetTickers fetches the public tickers for an instrument (e.g. BTC_USDT).
 // instrument can be left blank to retrieve tickers for ALL instruments.
 func (c *client) GetTickers(ctx context.Context, instrument string) ([]Ticker, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s%s", c.baseURL, methodGetTicker), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s%s", c.requester.BaseURL, methodGetTicker), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -82,7 +84,7 @@ func (c *client) GetTickers(ctx context.Context, instrument string) ([]Ticker, e
 		req.URL.RawQuery = q.Encode()
 	}
 
-	res, err := c.client.Do(req)
+	res, err := c.requester.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to do request: %w", err)
 	}
@@ -116,12 +118,8 @@ func (c *client) GetTickers(ctx context.Context, instrument string) ([]Ticker, e
 		code = tickerResponse.Code
 	}
 
-	if res.StatusCode > 299 {
-		code, err := code.Int64()
-		if err != nil {
-			return nil, fmt.Errorf("invalid http status code: %d - response code: %v", res.StatusCode, code)
-		}
-		return nil, newResponseError(code)
+	if err := c.requester.CheckErrorResponse(res.StatusCode, code); err != nil {
+		return nil, fmt.Errorf("error received in response: %w", err)
 	}
 
 	return tickers, nil

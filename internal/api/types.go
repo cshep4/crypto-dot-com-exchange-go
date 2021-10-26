@@ -1,9 +1,9 @@
-package cdcexchange
+package api
 
 import "encoding/json"
 
 type (
-	APIRequest struct {
+	Request struct {
 		ID        int64                  `json:"id"`
 		Method    string                 `json:"method"`
 		Nonce     int64                  `json:"nonce"`
@@ -12,9 +12,9 @@ type (
 		APIKey    string                 `json:"api_key,omitempty"`
 	}
 
-	APIBaseResponse struct {
-		ID     json.Number  `json:"id"`
-		Method string `json:"method"`
-		Code   json.Number  `json:"code"`
+	BaseResponse struct {
+		ID     json.Number `json:"id"`
+		Method string      `json:"method"`
+		Code   json.Number `json:"code"`
 	}
 )

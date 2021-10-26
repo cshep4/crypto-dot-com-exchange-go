@@ -5,6 +5,8 @@ import (
 
 	"github.com/jonboulle/clockwork"
 
+	"github.com/cshep4/crypto-dot-com-exchange-go/errors"
+	"github.com/cshep4/crypto-dot-com-exchange-go/internal/auth"
 	"github.com/cshep4/crypto-dot-com-exchange-go/internal/id"
 )
 
@@ -13,10 +15,8 @@ const (
 	ProductionBaseURL = productionBaseURL
 )
 
-type Client = client
-
 func (c client) BaseURL() string {
-	return c.baseURL
+	return c.requester.BaseURL
 }
 
 func (c client) APIKey() string {
@@ -28,13 +28,13 @@ func (c client) SecretKey() string {
 }
 
 func (c client) HTTPClient() *http.Client {
-	return c.client
+	return c.requester.Client
 }
 
 func WithIDGenerator(idGenerator id.IDGenerator) ClientOption {
 	return func(c *client) error {
 		if idGenerator == nil {
-			return InvalidParameterError{Parameter: "idGenerator", Reason: "cannot be empty"}
+			return errors.InvalidParameterError{Parameter: "idGenerator", Reason: "cannot be empty"}
 		}
 
 		c.idGenerator = idGenerator
@@ -42,10 +42,21 @@ func WithIDGenerator(idGenerator id.IDGenerator) ClientOption {
 	}
 }
 
+func WithSignatureGenerator(signatureGenerator auth.SignatureGenerator) ClientOption {
+	return func(c *client) error {
+		if signatureGenerator == nil {
+			return errors.InvalidParameterError{Parameter: "signatureGenerator", Reason: "cannot be empty"}
+		}
+
+		c.signatureGenerator = signatureGenerator
+		return nil
+	}
+}
+
 func WithClock(clock clockwork.Clock) ClientOption {
 	return func(c *client) error {
 		if clock == nil {
-			return InvalidParameterError{Parameter: "clock", Reason: "cannot be empty"}
+			return errors.InvalidParameterError{Parameter: "clock", Reason: "cannot be empty"}
 		}
 
 		c.clock = clock
@@ -56,10 +67,10 @@ func WithClock(clock clockwork.Clock) ClientOption {
 func WithBaseURL(url string) ClientOption {
 	return func(c *client) error {
 		if url == "" {
-			return InvalidParameterError{Parameter: "url", Reason: "cannot be empty"}
+			return errors.InvalidParameterError{Parameter: "url", Reason: "cannot be empty"}
 		}
 
-		c.baseURL = url
+		c.requester.BaseURL = url
 		return nil
 	}
 }

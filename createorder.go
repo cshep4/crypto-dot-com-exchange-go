@@ -3,6 +3,9 @@ package cdcexchange
 import (
 	"context"
 	"fmt"
+
+	"github.com/cshep4/crypto-dot-com-exchange-go/internal/api"
+	"github.com/cshep4/crypto-dot-com-exchange-go/internal/auth"
 )
 
 const (
@@ -85,8 +88,8 @@ type (
 
 	// CreateOrderResponse is the base response returned from the private/create-order API.
 	CreateOrderResponse struct {
-		// APIBaseResponse is the common response fields.
-		APIBaseResponse
+		// api.BaseResponse is the common response fields.
+		api.BaseResponse
 		// Result is the response attributes of the endpoint.
 		Result CreateOrderResult `json:"result"`
 	}
@@ -141,19 +144,19 @@ func (c *client) CreateOrder(ctx context.Context, req CreateOrderRequest) (*Crea
 		params["trigger_price"] = req.TriggerPrice
 	}
 
-	signature, err := c.generateSignature(signatureRequest{
-		apiKey:    c.apiKey,
-		secretKey: c.secretKey,
-		id:        id,
-		method:    methodCreateOrder,
-		timestamp: timestamp,
-		params:    params,
+	signature, err := c.signatureGenerator.GenerateSignature(auth.SignatureRequest{
+		APIKey:    c.apiKey,
+		SecretKey: c.secretKey,
+		ID:        id,
+		Method:    methodCreateOrder,
+		Timestamp: timestamp,
+		Params:    params,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create signature: %w", err)
 	}
 
-	body := APIRequest{
+	body := api.Request{
 		ID:        id,
 		Method:    methodCreateOrder,
 		Nonce:     timestamp,
@@ -162,19 +165,15 @@ func (c *client) CreateOrder(ctx context.Context, req CreateOrderRequest) (*Crea
 		APIKey:    c.apiKey,
 	}
 
-	var CreateOrderResponse CreateOrderResponse
-	statusCode, err := c.postRequest(ctx, body, methodCreateOrder, &CreateOrderResponse)
+	var createOrderResponse CreateOrderResponse
+	statusCode, err := c.requester.Post(ctx, body, methodCreateOrder, &createOrderResponse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute post request: %w", err)
 	}
 
-	if statusCode > 299 {
-		code, err := CreateOrderResponse.Code.Int64()
-		if err != nil {
-			return nil, fmt.Errorf("invalid http status code: %d - response code: %v", statusCode, CreateOrderResponse.Code)
-		}
-		return nil, newResponseError(code)
+	if err := c.requester.CheckErrorResponse(statusCode, createOrderResponse.Code); err != nil {
+		return nil, fmt.Errorf("error received in response: %w", err)
 	}
 
-	return &CreateOrderResponse.Result, nil
+	return &createOrderResponse.Result, nil
 }

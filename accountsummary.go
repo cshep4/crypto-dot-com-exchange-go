@@ -1,12 +1,11 @@
 package cdcexchange
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	
+	"github.com/cshep4/crypto-dot-com-exchange-go/internal/api"
+	"github.com/cshep4/crypto-dot-com-exchange-go/internal/auth"
 )
 
 const (
@@ -16,8 +15,8 @@ const (
 type (
 	// AccountSummaryResponse is the base response returned from the private/get-account-summary API.
 	AccountSummaryResponse struct {
-		// APIBaseResponse is the common response fields.
-		APIBaseResponse
+		// api.BaseResponse is the common response fields.
+		api.BaseResponse
 		// Result is the response attributes of the endpoint.
 		Result AccountSummaryResult `json:"result"`
 	}
@@ -57,19 +56,19 @@ func (c *client) GetAccountSummary(ctx context.Context, currency string) ([]Acco
 		params["currency"] = currency
 	}
 
-	signature, err := c.generateSignature(signatureRequest{
-		apiKey:    c.apiKey,
-		secretKey: c.secretKey,
-		id:        id,
-		method:    methodGetAccountSummary,
-		timestamp: timestamp,
-		params:    params,
+	signature, err := c.signatureGenerator.GenerateSignature(auth.SignatureRequest{
+		APIKey:    c.apiKey,
+		SecretKey: c.secretKey,
+		ID:        id,
+		Method:    methodGetAccountSummary,
+		Timestamp: timestamp,
+		Params:    params,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create signature: %w", err)
 	}
 
-	body := APIRequest{
+	body := api.Request{
 		ID:        id,
 		Method:    methodGetAccountSummary,
 		Nonce:     timestamp,
@@ -79,48 +78,14 @@ func (c *client) GetAccountSummary(ctx context.Context, currency string) ([]Acco
 	}
 
 	var accountSummaryResponse AccountSummaryResponse
-	statusCode, err := c.postRequest(ctx, body, methodGetAccountSummary, &accountSummaryResponse)
+	statusCode, err := c.requester.Post(ctx, body, methodGetAccountSummary, &accountSummaryResponse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute post request: %w", err)
 	}
 
-	if statusCode > 299 {
-		code, err := accountSummaryResponse.Code.Int64()
-		if err != nil {
-			return nil, fmt.Errorf("invalid http status code: %d - response code: %v", statusCode, accountSummaryResponse.Code)
-		}
-		return nil, newResponseError(code)
+	if err := c.requester.CheckErrorResponse(statusCode, accountSummaryResponse.Code); err != nil {
+		return nil, fmt.Errorf("error received in response: %w", err)
 	}
 
 	return accountSummaryResponse.Result.Accounts, nil
-}
-
-func (c *client) postRequest(ctx context.Context, body APIRequest, method string, response interface{}) (int, error) {
-	b, err := json.Marshal(body)
-	if err != nil {
-		return 0, fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s%s", c.baseURL, method), bytes.NewBuffer(b))
-	if err != nil {
-		return 0, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	res, err := c.client.Do(req)
-	if err != nil {
-		return 0, fmt.Errorf("failed to do request: %w", err)
-	}
-	defer res.Body.Close()
-
-	resBytes, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return 0, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	if err := json.Unmarshal(resBytes, &response); err != nil {
-		return 0, fmt.Errorf("failed to unmarshal response body: %w", err)
-	}
-
-	return res.StatusCode, nil
 }

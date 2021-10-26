@@ -6,6 +6,9 @@ import (
 
 	"github.com/jonboulle/clockwork"
 
+	"github.com/cshep4/crypto-dot-com-exchange-go/errors"
+	"github.com/cshep4/crypto-dot-com-exchange-go/internal/api"
+	"github.com/cshep4/crypto-dot-com-exchange-go/internal/auth"
 	"github.com/cshep4/crypto-dot-com-exchange-go/internal/id"
 )
 
@@ -75,21 +78,25 @@ type (
 
 	// client is a concrete implementation of CryptoDotComExchange.
 	client struct {
-		apiKey      string
-		secretKey   string
-		baseURL     string
-		client      *http.Client
-		clock       clockwork.Clock
-		idGenerator id.IDGenerator
+		apiKey             string
+		secretKey          string
+		clock              clockwork.Clock
+		idGenerator        id.IDGenerator
+		signatureGenerator auth.SignatureGenerator
+		requester          api.Requester
 	}
 )
 
 // New will construct a new instance of client.
 func New(apiKey string, secretKey string, opts ...ClientOption) (*client, error) {
 	c := &client{
-		client:      http.DefaultClient,
-		idGenerator: &id.Generator{},
-		clock:       clockwork.NewRealClock(),
+		idGenerator:        &id.Generator{},
+		signatureGenerator: &auth.Generator{},
+		clock:              clockwork.NewRealClock(),
+		requester: api.Requester{
+			Client:  http.DefaultClient,
+			BaseURL: productionBaseURL,
+		},
 	}
 
 	if err := c.UpdateConfig(apiKey, secretKey, opts...); err != nil {
@@ -104,14 +111,13 @@ func New(apiKey string, secretKey string, opts ...ClientOption) (*client, error)
 func (c *client) UpdateConfig(apiKey string, secretKey string, opts ...ClientOption) error {
 	switch {
 	case apiKey == "":
-		return InvalidParameterError{Parameter: "apiKey", Reason: "cannot be empty"}
+		return errors.InvalidParameterError{Parameter: "apiKey", Reason: "cannot be empty"}
 	case secretKey == "":
-		return InvalidParameterError{Parameter: "secretKey", Reason: "cannot be empty"}
+		return errors.InvalidParameterError{Parameter: "secretKey", Reason: "cannot be empty"}
 	}
 
 	c.apiKey = apiKey
 	c.secretKey = secretKey
-	c.baseURL = productionBaseURL
 
 	for _, opt := range opts {
 		if err := opt(c); err != nil {
@@ -122,10 +128,19 @@ func (c *client) UpdateConfig(apiKey string, secretKey string, opts ...ClientOpt
 	return nil
 }
 
+// WithProductionEnvironment will initialise the client to make requests against the production environment.
+// This is the default setting.
+func WithProductionEnvironment() ClientOption {
+	return func(c *client) error {
+		c.requester.BaseURL = productionBaseURL
+		return nil
+	}
+}
+
 // WithUATEnvironment will initialise the client to make requests against the UAT sandbox environment.
 func WithUATEnvironment() ClientOption {
 	return func(c *client) error {
-		c.baseURL = uatSandboxBaseURL
+		c.requester.BaseURL = uatSandboxBaseURL
 		return nil
 	}
 }
@@ -135,10 +150,10 @@ func WithUATEnvironment() ClientOption {
 func WithHTTPClient(httpClient *http.Client) ClientOption {
 	return func(c *client) error {
 		if httpClient == nil {
-			return InvalidParameterError{Parameter: "httpClient", Reason: "cannot be empty"}
+			return errors.InvalidParameterError{Parameter: "httpClient", Reason: "cannot be empty"}
 		}
 
-		c.client = httpClient
+		c.requester.Client = httpClient
 		return nil
 	}
 }

@@ -1,8 +1,9 @@
-package cdcexchange
+package errors
 
 import (
 	"errors"
 	"fmt"
+	"net/http"
 )
 
 var (
@@ -43,6 +44,7 @@ var (
 	ErrMGCreditLineNotMaintained = errors.New("please ensure your credit line is maintained and try again later")
 )
 
+// InvalidParameterError is returned when a required parameter is passed that is invalid.
 type InvalidParameterError struct {
 	Parameter string
 	Reason    string
@@ -52,21 +54,29 @@ func (ipe InvalidParameterError) Error() string {
 	return fmt.Sprintf("invalid parameter: %s %s", ipe.Parameter, ipe.Reason)
 }
 
+// ResponseError is returned when an error is returned from the API.
 type ResponseError struct {
-	Code int64
-	Err  error
+	Code           int64
+	HTTPStatusCode int
+	Err            error
 }
 
+// Error will return a string representation of the response error in the following format:
+// 401 Unauthorized: (10003) ip address not whitelisted
 func (re ResponseError) Error() string {
-	return fmt.Sprintf("%d: %v", re.Code, re.Err)
+	return fmt.Sprintf("%d %s: (%d) %v", re.HTTPStatusCode, http.StatusText(re.HTTPStatusCode), re.Code, re.Err)
 }
 
 func (re ResponseError) Unwrap() error {
 	return re.Err
 }
 
-func newResponseError(code int64) error {
-	err := ResponseError{Code: code}
+// NewResponseError creates a new instance of ResponseError based on the status code and response code
+func NewResponseError(httpStatusCode int, code int64) error {
+	err := ResponseError{
+		Code:           code,
+		HTTPStatusCode: httpStatusCode,
+	}
 
 	switch code {
 	case 0:
