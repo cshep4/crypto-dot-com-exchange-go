@@ -356,19 +356,22 @@ func TestRequester_CheckErrorResponse_Success(t *testing.T) {
 		{
 			name: "returns nil when status code is 1xx",
 			args: args{
-				statusCode: 199,
+				statusCode:   199,
+				responseCode: "0",
 			},
 		},
 		{
 			name: "returns nil when status code is 2xx",
 			args: args{
-				statusCode: 299,
+				statusCode:   299,
+				responseCode: "0",
 			},
 		},
 		{
 			name: "returns nil when status code is 3xx",
 			args: args{
-				statusCode: 399,
+				statusCode:   399,
+				responseCode: "0",
 			},
 		},
 	}
