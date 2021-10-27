@@ -56,13 +56,18 @@ type (
 		// The user.order subscription can be used to check when the order is successfully created.
 		// Method: private/create-order
 		CreateOrder(ctx context.Context, req CreateOrderRequest) (*CreateOrderResult, error)
-		// GetOpenOrders gets all open orders for a particular instrument
+		// CancelOrder cancels an existing order on the Exchange.
+		// This call is asynchronous, so the response is simply a confirmation of the request.
+		// The user.order subscription can be used to check when the order is successfully cancelled.
+		// Method: private/cancel-order
+		CancelOrder(ctx context.Context, instrumentName string, orderID string) error
+		// GetOpenOrders gets all open orders for a particular instrument.
 		// Pagination is handled using page size (Default: 20, Max: 200) & number (0-based).
 		// req.InstrumentName can be left blank to get open orders for all instruments.
 		// Method: private/get-open-orders
 		GetOpenOrders(ctx context.Context, req GetOpenOrdersRequest) (*GetOpenOrdersResult, error)
-		// GetOrderDetail gets details of an order for a particular order ID
-		// Method: get-order-detail
+		// GetOrderDetail gets details of an order for a particular order ID.
+		// Method: private/get-order-detail
 		GetOrderDetail(ctx context.Context, orderID string) (*GetOrderDetailResult, error)
 	}
 
