@@ -18,8 +18,11 @@ type CancelOrderResponse struct {
 }
 
 // CancelOrder cancels an existing order on the Exchange.
+//
 // This call is asynchronous, so the response is simply a confirmation of the request.
+//
 // The user.order subscription can be used to check when the order is successfully cancelled.
+//
 // Method: private/cancel-order
 func (c *client) CancelOrder(ctx context.Context, instrumentName string, orderID string) error {
 	if instrumentName == "" {

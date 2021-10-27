@@ -103,9 +103,12 @@ type (
 	}
 )
 
-// GetOpenOrders gets all open orders for a particular instrument
+// GetOpenOrders gets all open orders for a particular instrument.
+//
 // Pagination is handled using page size (Default: 20, Max: 200) & number (0-based).
+//
 // req.InstrumentName can be left blank to get open orders for all instruments.
+//
 // Method: private/get-open-orders
 func (c *client) GetOpenOrders(ctx context.Context, req GetOpenOrdersRequest) (*GetOpenOrdersResult, error) {
 	if req.PageSize < 0 {

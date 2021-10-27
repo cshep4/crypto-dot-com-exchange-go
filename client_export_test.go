@@ -23,6 +23,7 @@ const (
 	MethodCreateOrder       = methodCreateOrder
 	MethodCancelOrder       = methodCancelOrder
 	MethodCancelAllOrders   = methodCancelAllOrders
+	MethodGetOrderHistory   = methodGetOrderHistory
 	MethodGetOpenOrders     = methodGetOpenOrders
 	MethodGetOrderDetail    = methodGetOrderDetail
 )

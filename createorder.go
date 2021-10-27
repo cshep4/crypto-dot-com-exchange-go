@@ -104,8 +104,11 @@ type (
 )
 
 // CreateOrder creates a new BUY or SELL order on the Exchange.
+//
 // This call is asynchronous, so the response is simply a confirmation of the request.
+//
 // The user.order subscription can be used to check when the order is successfully created.
+//
 // Method: private/create-order
 func (c *client) CreateOrder(ctx context.Context, req CreateOrderRequest) (*CreateOrderResult, error) {
 	var (

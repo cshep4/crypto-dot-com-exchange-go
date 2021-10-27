@@ -69,7 +69,9 @@ type (
 )
 
 // GetTickers fetches the public tickers for an instrument (e.g. BTC_USDT).
+//
 // instrument can be left blank to retrieve tickers for ALL instruments.
+//
 // Method: public/get-ticker
 func (c *client) GetTickers(ctx context.Context, instrument string) ([]Ticker, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s%s", c.requester.BaseURL, methodGetTicker), nil)

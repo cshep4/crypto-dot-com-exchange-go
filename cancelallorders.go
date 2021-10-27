@@ -18,8 +18,11 @@ type CancelAllOrdersResponse struct {
 }
 
 // CancelAllOrders cancels  all orders for a particular instrument/pair.
+//
 // This call is asynchronous, so the response is simply a confirmation of the request.
+//
 // The user.order subscription can be used to check when the order is successfully cancelled.
+//
 // Method: private/cancel-all-orders
 func (c *client) CancelAllOrders(ctx context.Context, instrumentName string) error {
 	if instrumentName == "" {

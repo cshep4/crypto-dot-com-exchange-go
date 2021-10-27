@@ -55,6 +55,7 @@ type (
 )
 
 // GetOrderDetail gets details of an order for a particular order ID.
+//
 // Method: private/get-order-detail
 func (c *client) GetOrderDetail(ctx context.Context, orderID string) (*GetOrderDetailResult, error) {
 	if orderID == "" {
