@@ -182,7 +182,7 @@ type SpotTradingAPI interface {
 | private/cancel-order             | ⚠️       |
 | private/cancel-all-orders        | ⚠️       |
 | private/get-order-history        | ⚠️       |
-| private/get-open-orders          | ⚠️       |
+| private/get-open-orders          | ✅       |
 | private/get-order-detail         | ⚠️       |
 | private/get-trades               | ⚠️       |
 
