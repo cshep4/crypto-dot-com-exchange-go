@@ -32,8 +32,8 @@ func TestClient_GetInstruments_Error(t *testing.T) {
 	tests := []struct {
 		name        string
 		client      http.Client
-		responseErr  error
-		expectedErr  error
+		responseErr error
+		expectedErr error
 	}{
 		{
 			name: "returns error given error making request",

@@ -3,7 +3,7 @@ package cdcexchange
 import (
 	"context"
 	"fmt"
-	
+
 	"github.com/cshep4/crypto-dot-com-exchange-go/internal/api"
 	"github.com/cshep4/crypto-dot-com-exchange-go/internal/auth"
 )

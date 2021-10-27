@@ -43,7 +43,6 @@ func (g Generator) GenerateSignature(req SignatureRequest) (string, error) {
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
-
 }
 
 func (g Generator) buildParamString(params map[string]interface{}) string {

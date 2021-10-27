@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cshep4/crypto-dot-com-exchange-go"
+	cdcexchange "github.com/cshep4/crypto-dot-com-exchange-go"
 	"github.com/cshep4/crypto-dot-com-exchange-go/errors"
 )
 

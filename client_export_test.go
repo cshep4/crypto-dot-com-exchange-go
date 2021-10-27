@@ -16,15 +16,15 @@ const (
 
 	// Common API
 	MethodGetInstruments = methodGetInstruments
-	MethodGetTicker = methodGetTicker
+	MethodGetTicker      = methodGetTicker
 
 	// Spot Trading API
 	MethodGetAccountSummary = methodGetAccountSummary
-	MethodCreateOrder = methodCreateOrder
-	MethodCancelOrder = methodCancelOrder
-	MethodCancelAllOrders = methodCancelAllOrders
-	MethodGetOpenOrders = methodGetOpenOrders
-	MethodGetOrderDetail = methodGetOrderDetail
+	MethodCreateOrder       = methodCreateOrder
+	MethodCancelOrder       = methodCancelOrder
+	MethodCancelAllOrders   = methodCancelAllOrders
+	MethodGetOpenOrders     = methodGetOpenOrders
+	MethodGetOrderDetail    = methodGetOrderDetail
 )
 
 func (c client) BaseURL() string {
