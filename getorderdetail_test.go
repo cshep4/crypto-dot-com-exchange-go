@@ -24,16 +24,17 @@ import (
 	cdctime "github.com/cshep4/crypto-dot-com-exchange-go/internal/time"
 )
 
-func TestClient_GetOpenOrders_Error(t *testing.T) {
+func TestClient_GetOrderDetail_Error(t *testing.T) {
 	const (
 		apiKey    = "some api key"
 		secretKey = "some secret key"
 		id        = int64(1234)
+		orderID   = "some order id"
 	)
 	testErr := errors.New("some error")
 
 	type args struct {
-		req cdcexchange.GetOpenOrdersRequest
+		orderID string
 	}
 	tests := []struct {
 		name string
@@ -44,36 +45,28 @@ func TestClient_GetOpenOrders_Error(t *testing.T) {
 		expectedErr  error
 	}{
 		{
-			name: "returns error when page size is less than 0",
+			name: "returns error when order id is empty",
 			args: args{
-				req: cdcexchange.GetOpenOrdersRequest{
-					PageSize: -1,
-				},
+				orderID: "",
 			},
 			expectedErr: cdcerrors.InvalidParameterError{
-				Parameter: "req.PageSize",
-				Reason:    "cannot be less than 0",
+				Parameter: "orderID",
+				Reason:    "cannot be empty",
 			},
 		},
 		{
-			name: "returns error when page size is greater than 200",
+			name: "returns error given error generating signature",
 			args: args{
-				req: cdcexchange.GetOpenOrdersRequest{
-					PageSize: 201,
-				},
+				orderID: orderID,
 			},
-			expectedErr: cdcerrors.InvalidParameterError{
-				Parameter: "req.PageSize",
-				Reason:    "cannot be greater than 200",
-			},
-		},
-		{
-			name:         "returns error given error generating signature",
 			signatureErr: testErr,
 			expectedErr:  testErr,
 		},
 		{
 			name: "returns error given error making request",
+			args: args{
+				orderID: orderID,
+			},
 			client: http.Client{
 				Transport: roundTripper{
 					err: testErr,
@@ -83,6 +76,9 @@ func TestClient_GetOpenOrders_Error(t *testing.T) {
 		},
 		{
 			name: "returns error given error response",
+			args: args{
+				orderID: orderID,
+			},
 			client: http.Client{
 				Transport: roundTripper{
 					statusCode: http.StatusTeapot,
@@ -119,19 +115,19 @@ func TestClient_GetOpenOrders_Error(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			if tt.req.PageSize >= 0 && tt.req.PageSize < 200 {
+			if tt.orderID != "" {
 				idGenerator.EXPECT().Generate().Return(id)
 				signatureGenerator.EXPECT().GenerateSignature(auth.SignatureRequest{
 					APIKey:    apiKey,
 					SecretKey: secretKey,
 					ID:        id,
-					Method:    cdcexchange.MethodGetOpenOrders,
+					Method:    cdcexchange.MethodGetOrderDetail,
 					Timestamp: now.UnixMilli(),
-					Params:    map[string]interface{}{"page": 0},
+					Params:    map[string]interface{}{"order_id": orderID},
 				}).Return("signature", tt.signatureErr)
 			}
 
-			res, err := client.GetOpenOrders(ctx, tt.req)
+			res, err := client.GetOrderDetail(ctx, tt.orderID)
 			require.Error(t, err)
 
 			assert.Empty(t, res)
@@ -153,147 +149,119 @@ func TestClient_GetOpenOrders_Error(t *testing.T) {
 	}
 }
 
-func TestClient_GetOpenOrders_Success(t *testing.T) {
+func TestClient_GetOrderDetail_Success(t *testing.T) {
 	const (
 		apiKey    = "some api key"
 		secretKey = "some secret key"
 		id        = int64(1234)
 		signature = "some signature"
+		orderID   = "some order id"
 
-		instrument = "some instrument"
-		clientOID  = "some client oid"
+		clientOID = "some client oid"
 	)
 	now := time.Now().Round(time.Second)
 
 	type args struct {
-		req cdcexchange.GetOpenOrdersRequest
+		orderID string
 	}
 	tests := []struct {
 		name        string
 		handlerFunc func(w http.ResponseWriter, r *http.Request)
 		args
 		expectedParams map[string]interface{}
-		expectedResult cdcexchange.GetOpenOrdersResult
+		expectedResult cdcexchange.GetOrderDetailResult
 	}{
 		{
-			name: "successfully gets all orders for an instrument",
+			name: "successfully gets order details",
 			args: args{
-				req: cdcexchange.GetOpenOrdersRequest{
-					InstrumentName: instrument,
-					PageSize:       100,
-					Page:           1,
-				},
+				orderID: orderID,
 			},
 			handlerFunc: func(w http.ResponseWriter, r *http.Request) {
-				assert.Contains(t, r.URL.Path, cdcexchange.MethodGetOpenOrders)
+				assert.Contains(t, r.URL.Path, cdcexchange.MethodGetOrderDetail)
 				t.Cleanup(func() { require.NoError(t, r.Body.Close()) })
 
 				var body api.Request
 				require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
 
-				assert.Equal(t, cdcexchange.MethodGetOpenOrders, body.Method)
+				assert.Equal(t, cdcexchange.MethodGetOrderDetail, body.Method)
 				assert.Equal(t, id, body.ID)
 				assert.Equal(t, apiKey, body.APIKey)
 				assert.Equal(t, now.UnixMilli(), body.Nonce)
 				assert.Equal(t, signature, body.Signature)
-				assert.Equal(t, instrument, body.Params["instrument_name"])
-				assert.Equal(t, float64(100), body.Params["page_size"])
-				assert.Equal(t, float64(1), body.Params["page"])
+				assert.Equal(t, orderID, body.Params["order_id"])
 
 				res := fmt.Sprintf(`{
-							"id": 0,
-							"method":"",
-							"code":0,
-							"result":{
-								"order_id":1234,"order_list":[
-									{
-										"status":"",
-										"reason":"",
-										"side":"",
-										"price":0,
-										"quantity":0,
-										"order_id":"",
-										"client_oid":"some client oid",
-										"create_time":%d,
-										"update_time":%d
-									}
-								]
-							}
-						}`, now.UnixMilli(), now.UnixMilli())
+				  "id": 11,
+				  "method": "private/get-order-detail",
+				  "code": 0,
+				  "result": {
+					"trade_list": [
+					  {
+						"side": "BUY",
+						"instrument_name": "ETH_CRO",
+						"fee": 0.007,
+						"trade_id": "371303044218155296",
+						"create_time": %d,
+						"traded_price": 7,
+						"traded_quantity": 7,
+						"fee_currency": "CRO",
+						"order_id": "%s"
+					  }
+					],
+					"order_info": {
+					  "status": "FILLED",
+					  "side": "BUY",
+					  "order_id": "%s",
+					  "client_oid": "%s",
+					  "create_time": %d,
+					  "update_time": %d,
+					  "type": "LIMIT",
+					  "instrument_name": "ETH_CRO",
+					  "cumulative_quantity": 7,
+					  "cumulative_value": 7,
+					  "avg_price": 7,
+					  "fee_currency": "CRO",
+					  "time_in_force": "GOOD_TILL_CANCEL",
+					  "exec_inst": "POST_ONLY"
+					}
+				  }
+				}`, now.UnixMilli(), orderID, orderID, clientOID, now.UnixMilli(), now.UnixMilli())
 
 				_, err := w.Write([]byte(res))
 				require.NoError(t, err)
 			},
 			expectedParams: map[string]interface{}{
-				"instrument_name": instrument,
-				"page_size":       100,
-				"page":            1,
+				"order_id": orderID,
 			},
-			expectedResult: cdcexchange.GetOpenOrdersResult{
-				Count: 1234,
-				OrderList: []cdcexchange.Order{
+			expectedResult: cdcexchange.GetOrderDetailResult{
+				TradeList: []cdcexchange.Trade{
 					{
-						ClientOID:  clientOID,
-						CreateTime: cdctime.Time(now),
-						UpdateTime: cdctime.Time(now),
+						Side:           cdcexchange.OrderSideBuy,
+						InstrumentName: "ETH_CRO",
+						Fee:            0.007,
+						TradeID:        "371303044218155296",
+						CreateTime:     cdctime.Time(now),
+						TradedPrice:    7,
+						TradedQuantity: 7,
+						FeeCurrency:    "CRO",
+						OrderID:        orderID,
 					},
 				},
-			},
-		},
-		{
-			name: "successfully gets all orders for all instruments",
-			args: args{
-				req: cdcexchange.GetOpenOrdersRequest{},
-			},
-			handlerFunc: func(w http.ResponseWriter, r *http.Request) {
-				assert.Contains(t, r.URL.Path, cdcexchange.MethodGetOpenOrders)
-				t.Cleanup(func() { require.NoError(t, r.Body.Close()) })
-
-				var body api.Request
-				require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
-
-				assert.Equal(t, cdcexchange.MethodGetOpenOrders, body.Method)
-				assert.Equal(t, id, body.ID)
-				assert.Equal(t, apiKey, body.APIKey)
-				assert.Equal(t, now.UnixMilli(), body.Nonce)
-				assert.Equal(t, signature, body.Signature)
-				assert.Equal(t, float64(0), body.Params["page"])
-
-				res := fmt.Sprintf(`{
-							"id": 0,
-							"method":"",
-							"code":0,
-							"result":{
-								"order_id":1234,"order_list":[
-									{
-										"status":"",
-										"reason":"",
-										"side":"",
-										"price":0,
-										"quantity":0,
-										"order_id":"",
-										"client_oid":"some client oid",
-										"create_time":%d,
-										"update_time":%d
-									}
-								]
-							}
-						}`, now.UnixMilli(), now.UnixMilli())
-
-				_, err := w.Write([]byte(res))
-				require.NoError(t, err)
-			},
-			expectedParams: map[string]interface{}{
-				"page": 0,
-			},
-			expectedResult: cdcexchange.GetOpenOrdersResult{
-				Count: 1234,
-				OrderList: []cdcexchange.Order{
-					{
-						ClientOID:  clientOID,
-						CreateTime: cdctime.Time(now),
-						UpdateTime: cdctime.Time(now),
-					},
+				OrderInfo: cdcexchange.Order{
+					Status:             cdcexchange.OrderStatusFilled,
+					Side:               cdcexchange.OrderSideBuy,
+					OrderID:            orderID,
+					ClientOID:          clientOID,
+					CreateTime:         cdctime.Time(now),
+					UpdateTime:         cdctime.Time(now),
+					OrderType:          cdcexchange.OrderTypeLimit,
+					InstrumentName:     "ETH_CRO",
+					CumulativeQuantity: 7,
+					CumulativeValue:    7,
+					AvgPrice:           7,
+					FeeCurrency:        "CRO",
+					TimeInForce:        cdcexchange.TimeInForceGoodTilCancelled,
+					ExecInst:           cdcexchange.ExecInstPostOnly,
 				},
 			},
 		},
@@ -326,12 +294,12 @@ func TestClient_GetOpenOrders_Success(t *testing.T) {
 				APIKey:    apiKey,
 				SecretKey: secretKey,
 				ID:        id,
-				Method:    cdcexchange.MethodGetOpenOrders,
+				Method:    cdcexchange.MethodGetOrderDetail,
 				Timestamp: now.UnixMilli(),
 				Params:    tt.expectedParams,
 			}).Return(signature, nil)
 
-			res, err := client.GetOpenOrders(ctx, tt.req)
+			res, err := client.GetOrderDetail(ctx, tt.orderID)
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.expectedResult, *res)

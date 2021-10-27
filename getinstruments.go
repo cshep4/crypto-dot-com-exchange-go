@@ -44,6 +44,7 @@ type (
 )
 
 // GetInstruments provides information on all supported instruments (e.g. BTC_USDT).
+// Method: public/get-instruments
 func (c *client) GetInstruments(ctx context.Context) ([]Instrument, error) {
 	body := api.Request{
 		ID:     c.idGenerator.Generate(),

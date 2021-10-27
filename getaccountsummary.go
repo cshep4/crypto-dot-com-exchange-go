@@ -44,6 +44,7 @@ type (
 
 // GetAccountSummary returns the account balance of a user for a particular token.
 // currency can be left blank to retrieve balances for ALL tokens.
+// Method: private/get-account-summary
 func (c *client) GetAccountSummary(ctx context.Context, currency string) ([]Account, error) {
 	var (
 		id        = c.idGenerator.Generate()

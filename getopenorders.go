@@ -3,18 +3,27 @@ package cdcexchange
 import (
 	"context"
 	"fmt"
-	"github.com/cshep4/crypto-dot-com-exchange-go/errors"
-	"time"
 
+	"github.com/cshep4/crypto-dot-com-exchange-go/errors"
 	"github.com/cshep4/crypto-dot-com-exchange-go/internal/api"
 	"github.com/cshep4/crypto-dot-com-exchange-go/internal/auth"
+	"github.com/cshep4/crypto-dot-com-exchange-go/internal/time"
 )
 
 const (
 	methodGetOpenOrders = "private/get-open-orders"
+
+	OrderStatusActive    OrderStatus = "ACTIVE"
+	OrderStatusCancelled OrderStatus = "CANCELED"
+	OrderStatusFilled    OrderStatus = "FILLED"
+	OrderStatusRejected  OrderStatus = "REJECTED"
+	OrderStatusExpired   OrderStatus = "EXPIRED"
 )
 
 type (
+	// OrderStatus is the current status of the order.
+	OrderStatus string
+
 	// GetOpenOrdersRequest is the request params sent for the private/get-open-orders API.
 	GetOpenOrdersRequest struct {
 		// InstrumentName represents the currency pair for the orders (e.g. ETH_CRO or BTC_USDT).
@@ -48,8 +57,8 @@ type (
 	// Order represents the details of a specific order.
 	// Note: To detect a 'partial filled' status, look for status as ACTIVE and cumulative_quantity > 0.
 	Order struct {
-		// Status ACTIVE, CANCELED, FILLED, REJECTED or EXPIRED.
-		Status string `json:"status"`
+		// Status is the status of the order, can be ACTIVE, CANCELED, FILLED, REJECTED or EXPIRED.
+		Status OrderStatus `json:"status"`
 		// Reason is the reason code for rejected orders (see "Response and Reason Codes").
 		Reason string `json:"reason"`
 		// Side represents whether the order is buy or sell.
@@ -97,6 +106,7 @@ type (
 // GetOpenOrders gets all open orders for a particular instrument
 // Pagination is handled using page size (Default: 20, Max: 200) & number (0-based).
 // req.InstrumentName can be left blank to get open orders for all instruments.
+// Method: private/get-open-orders
 func (c *client) GetOpenOrders(ctx context.Context, req GetOpenOrdersRequest) (*GetOpenOrdersResult, error) {
 	if req.PageSize < 0 {
 		return nil, errors.InvalidParameterError{Parameter: "req.PageSize", Reason: "cannot be less than 0"}

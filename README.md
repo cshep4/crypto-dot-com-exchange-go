@@ -138,9 +138,11 @@ Client interfaces can be found in [client.go](client.go).
 // CommonAPI is a Crypto.com Exchange client for Common API.
 type CommonAPI interface {
     // GetInstruments provides information on all supported instruments (e.g. BTC_USDT).
+    // Method: public/get-instruments
     GetInstruments(ctx context.Context) ([]Instrument, error)
     // GetTickers fetches the public tickers for an instrument (e.g. BTC_USDT).
     // instrument can be left blank to retrieve tickers for ALL instruments.
+    // Method: public/get-ticker
     GetTickers(ctx context.Context, instrument string) ([]Ticker, error)
 }
 ```
@@ -167,15 +169,21 @@ type CommonAPI interface {
 type SpotTradingAPI interface {
     // GetAccountSummary returns the account balance of a user for a particular token.
     // currency can be left blank to retrieve balances for ALL tokens.
+    // Method: private/get-account-summary
     GetAccountSummary(ctx context.Context, currency string) ([]Account, error)
     // CreateOrder creates a new BUY or SELL order on the Exchange.
     // This call is asynchronous, so the response is simply a confirmation of the request.
     // The user.order subscription can be used to check when the order is successfully created.
+    // Method: private/create-order
     CreateOrder(ctx context.Context, req CreateOrderRequest) (*CreateOrderResult, error)
     // GetOpenOrders gets all open orders for a particular instrument
     // Pagination is handled using page size (Default: 20, Max: 200) & number (0-based).
     // req.InstrumentName can be left blank to get open orders for all instruments.
+    // Method: private/get-open-orders
     GetOpenOrders(ctx context.Context, req GetOpenOrdersRequest) (*GetOpenOrdersResult, error)
+    // GetOrderDetail gets details of an order for a particular order ID
+    // Method: get-order-detail
+    GetOrderDetail(ctx context.Context, orderID string) (*GetOrderDetailResult, error)
 }
 ```
 
@@ -187,7 +195,7 @@ type SpotTradingAPI interface {
 | private/cancel-all-orders        | ⚠️       |
 | private/get-order-history        | ⚠️       |
 | private/get-open-orders          | ✅       |
-| private/get-order-detail         | ⚠️       |
+| private/get-order-detail         | ✅       |
 | private/get-trades               | ⚠️       |
 
 ### Margin Trading API
