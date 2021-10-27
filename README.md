@@ -181,6 +181,11 @@ type SpotTradingAPI interface {
     // The user.order subscription can be used to check when the order is successfully cancelled.
     // Method: private/cancel-order
     CancelOrder(ctx context.Context, instrumentName string, orderID string) error
+    // CancelAllOrders cancels  all orders for a particular instrument/pair.
+    // This call is asynchronous, so the response is simply a confirmation of the request.
+    // The user.order subscription can be used to check when the order is successfully cancelled.
+    // Method: private/cancel-all-orders
+    CancelAllOrders(ctx context.Context, instrumentName string) error
     // GetOpenOrders gets all open orders for a particular instrument.
     // Pagination is handled using page size (Default: 20, Max: 200) & number (0-based).
     // req.InstrumentName can be left blank to get open orders for all instruments.
@@ -197,7 +202,7 @@ type SpotTradingAPI interface {
 | private/get-account-summary      | ✅       |
 | private/create-order             | ✅       |
 | private/cancel-order             | ✅       |
-| private/cancel-all-orders        | ⚠️       |
+| private/cancel-all-orders        | ✅       |
 | private/get-order-history        | ⚠️       |
 | private/get-open-orders          | ✅       |
 | private/get-order-detail         | ✅       |

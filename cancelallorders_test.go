@@ -23,19 +23,17 @@ import (
 	signature_mocks "github.com/cshep4/crypto-dot-com-exchange-go/internal/mocks/signature"
 )
 
-func TestClient_CancelOrder_Error(t *testing.T) {
+func TestClient_CancelAllOrders_Error(t *testing.T) {
 	const (
 		apiKey         = "some api key"
 		secretKey      = "some secret key"
 		id             = int64(1234)
-		orderID        = "some order id"
 		instrumentName = "some instrument name"
 	)
 	testErr := errors.New("some error")
 
 	type args struct {
 		instrumentName string
-		orderID        string
 	}
 	tests := []struct {
 		name string
@@ -56,20 +54,8 @@ func TestClient_CancelOrder_Error(t *testing.T) {
 			},
 		},
 		{
-			name: "returns error when order id is empty",
-			args: args{
-				orderID:        "",
-				instrumentName: instrumentName,
-			},
-			expectedErr: cdcerrors.InvalidParameterError{
-				Parameter: "orderID",
-				Reason:    "cannot be empty",
-			},
-		},
-		{
 			name: "returns error given error generating signature",
 			args: args{
-				orderID:        orderID,
 				instrumentName: instrumentName,
 			},
 			signatureErr: testErr,
@@ -78,7 +64,6 @@ func TestClient_CancelOrder_Error(t *testing.T) {
 		{
 			name: "returns error given error making request",
 			args: args{
-				orderID:        orderID,
 				instrumentName: instrumentName,
 			},
 			client: http.Client{
@@ -91,7 +76,6 @@ func TestClient_CancelOrder_Error(t *testing.T) {
 		{
 			name: "returns error given error response",
 			args: args{
-				orderID:        orderID,
 				instrumentName: instrumentName,
 			},
 			client: http.Client{
@@ -129,22 +113,21 @@ func TestClient_CancelOrder_Error(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			if tt.orderID != "" && tt.instrumentName != "" {
+			if tt.instrumentName != "" {
 				idGenerator.EXPECT().Generate().Return(id)
 				signatureGenerator.EXPECT().GenerateSignature(auth.SignatureRequest{
 					APIKey:    apiKey,
 					SecretKey: secretKey,
 					ID:        id,
-					Method:    cdcexchange.MethodCancelOrder,
+					Method:    cdcexchange.MethodCancelAllOrders,
 					Timestamp: now.UnixMilli(),
 					Params: map[string]interface{}{
 						"instrument_name": instrumentName,
-						"order_id":        orderID,
 					},
 				}).Return("signature", tt.signatureErr)
 			}
 
-			err = client.CancelOrder(ctx, tt.instrumentName, tt.orderID)
+			err = client.CancelAllOrders(ctx, tt.instrumentName)
 			require.Error(t, err)
 
 			assert.True(t, errors.Is(err, tt.expectedErr))
@@ -164,21 +147,19 @@ func TestClient_CancelOrder_Error(t *testing.T) {
 	}
 }
 
-func TestClient_CancelOrder_Success(t *testing.T) {
+func TestClient_CancelAllOrders_Success(t *testing.T) {
 	const (
 		apiKey    = "some api key"
 		secretKey = "some secret key"
 		id        = int64(1234)
 		signature = "some signature"
 
-		orderID        = "some order id"
 		instrumentName = "some instrument name"
 	)
 	now := time.Now()
 
 	type args struct {
 		instrumentName string
-		orderID        string
 	}
 	tests := []struct {
 		name        string
@@ -190,24 +171,22 @@ func TestClient_CancelOrder_Success(t *testing.T) {
 			name: "successfully cancels an order",
 			args: args{
 				instrumentName: instrumentName,
-				orderID:        orderID,
 			},
 			handlerFunc: func(w http.ResponseWriter, r *http.Request) {
-				assert.Contains(t, r.URL.Path, cdcexchange.MethodCancelOrder)
+				assert.Contains(t, r.URL.Path, cdcexchange.MethodCancelAllOrders)
 				t.Cleanup(func() { require.NoError(t, r.Body.Close()) })
 
 				var body api.Request
 				require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
 
-				assert.Equal(t, cdcexchange.MethodCancelOrder, body.Method)
+				assert.Equal(t, cdcexchange.MethodCancelAllOrders, body.Method)
 				assert.Equal(t, id, body.ID)
 				assert.Equal(t, apiKey, body.APIKey)
 				assert.Equal(t, now.UnixMilli(), body.Nonce)
 				assert.Equal(t, signature, body.Signature)
 				assert.Equal(t, instrumentName, body.Params["instrument_name"])
-				assert.Equal(t, orderID, body.Params["order_id"])
 
-				res := cdcexchange.CancelOrderResponse{
+				res := cdcexchange.CancelAllOrdersResponse{
 					BaseResponse: api.BaseResponse{},
 				}
 
@@ -215,7 +194,6 @@ func TestClient_CancelOrder_Success(t *testing.T) {
 			},
 			expectedParams: map[string]interface{}{
 				"instrument_name": instrumentName,
-				"order_id":        orderID,
 			},
 		},
 	}
@@ -247,12 +225,12 @@ func TestClient_CancelOrder_Success(t *testing.T) {
 				APIKey:    apiKey,
 				SecretKey: secretKey,
 				ID:        id,
-				Method:    cdcexchange.MethodCancelOrder,
+				Method:    cdcexchange.MethodCancelAllOrders,
 				Timestamp: now.UnixMilli(),
 				Params:    tt.expectedParams,
 			}).Return(signature, nil)
 
-			err = client.CancelOrder(ctx, tt.instrumentName, tt.orderID)
+			err = client.CancelAllOrders(ctx, tt.instrumentName)
 			require.NoError(t, err)
 		})
 	}
