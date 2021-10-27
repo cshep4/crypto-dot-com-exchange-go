@@ -26,6 +26,7 @@ const (
 	MethodGetOrderHistory   = methodGetOrderHistory
 	MethodGetOpenOrders     = methodGetOpenOrders
 	MethodGetOrderDetail    = methodGetOrderDetail
+	MethodGetTrades         = methodGetTrades
 )
 
 func (c client) BaseURL() string {

@@ -88,7 +88,7 @@ type (
 		// req.InstrumentName can be left blank to get open orders for all instruments.
 		//
 		// Method: private/get-order-history
-		GetOrderHistory(ctx context.Context, req GetOrderHistoryRequest) (*GetOrderHistoryResult, error)
+		GetOrderHistory(ctx context.Context, req GetOrderHistoryRequest) ([]Order, error)
 		// GetOpenOrders gets all open orders for a particular instrument.
 		//
 		// Pagination is handled using page size (Default: 20, Max: 200) & number (0-based).
@@ -101,6 +101,15 @@ type (
 		//
 		// Method: private/get-order-detail
 		GetOrderDetail(ctx context.Context, orderID string) (*GetOrderDetailResult, error)
+		// GetTrades gets all executed trades for a particular instrument.
+		//
+		// Pagination is handled using page size (Default: 20, Max: 200) & number (0-based).
+		// If paging is used, enumerate each page (starting with 0) until an empty trade_list array appears in the response.
+		//
+		// req.InstrumentName can be left blank to get executed trades for all instruments.
+		//
+		// Method: private/get-trades
+		GetTrades(ctx context.Context, req GetTradesRequest) ([]Trade, error)
 	}
 
 	// MarginTradingAPI is a Crypto.com Exchange client for Margin Trading API.

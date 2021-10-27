@@ -11,20 +11,20 @@ import (
 )
 
 const (
-	methodGetOrderHistory = "private/get-order-history"
+	methodGetTrades = "private/get-trades"
 )
 
 type (
-	// GetOrderHistoryRequest is the request params sent for the private/get-order-history API.
+	// GetTradesRequest is the request params sent for the private/get-trades API.
 	//
 	// The maximum duration between Start and End is 24 hours.
 	//
 	// You will receive an INVALID_DATE_RANGE error if the difference exceeds the maximum duration.
 	//
-	// For users looking to pull longer historical order data, users can create a loop to make a request
+	// For users looking to pull longer historical trade data, users can create a loop to make a request
 	// for each 24-period from the desired start to end time.
-	GetOrderHistoryRequest struct {
-		// InstrumentName represents the currency pair for the orders (e.g. ETH_CRO or BTC_USDT).
+	GetTradesRequest struct {
+		// InstrumentName represents the currency pair for the trades (e.g. ETH_CRO or BTC_USDT).
 		// if InstrumentName is omitted, all instruments will be returned.
 		InstrumentName string `json:"instrument_name"`
 		// Start is the start timestamp (milliseconds since the Unix epoch)
@@ -33,7 +33,7 @@ type (
 		// End is the end timestamp (milliseconds since the Unix epoch)
 		// (Default: now)
 		End time.Time `json:"end_ts"`
-		// PageSize represents maximum number of orders returned (for pagination)
+		// PageSize represents maximum number of trades returned (for pagination)
 		// (Default: 20, Max: 200)
 		// if PageSize is 0, it will be set as 20 by default.
 		PageSize int `json:"page_size"`
@@ -42,30 +42,30 @@ type (
 		Page int `json:"page"`
 	}
 
-	// GetOrderHistoryResponse is the base response returned from the private/get-order-history API.
-	GetOrderHistoryResponse struct {
+	// GetTradesResponse is the base response returned from the private/get-trades API.
+	GetTradesResponse struct {
 		// api.BaseResponse is the common response fields.
 		api.BaseResponse
 		// Result is the response attributes of the endpoint.
-		Result GetOrderHistoryResult `json:"result"`
+		Result GetTradesResult `json:"result"`
 	}
 
-	// GetOrderHistoryResult is the result returned from the private/get-order-history API.
-	GetOrderHistoryResult struct {
-		// OrderList is the array of orders.
-		OrderList []Order `json:"order_list"`
+	// GetTradesResult is the result returned from the private/get-trades API.
+	GetTradesResult struct {
+		// TradeList is the array of trades.
+		TradeList []Trade `json:"trade_list"`
 	}
 )
 
-// GetOrderHistory gets the order history for a particular instrument.
+// GetTrades gets all executed trades for a particular instrument.
 //
 // Pagination is handled using page size (Default: 20, Max: 200) & number (0-based).
-// If paging is used, enumerate each page (starting with 0) until an empty order_list array appears in the response.
+// If paging is used, enumerate each page (starting with 0) until an empty trade_list array appears in the response.
 //
-// req.InstrumentName can be left blank to get orders for all instruments.
+// req.InstrumentName can be left blank to get executed trades for all instruments.
 //
-// Method: private/get-order-history
-func (c *client) GetOrderHistory(ctx context.Context, req GetOrderHistoryRequest) ([]Order, error) {
+// Method: private/get-trades
+func (c *client) GetTrades(ctx context.Context, req GetTradesRequest) ([]Trade, error) {
 	if req.PageSize < 0 {
 		return nil, errors.InvalidParameterError{Parameter: "req.PageSize", Reason: "cannot be less than 0"}
 	}
@@ -97,7 +97,7 @@ func (c *client) GetOrderHistory(ctx context.Context, req GetOrderHistoryRequest
 		APIKey:    c.apiKey,
 		SecretKey: c.secretKey,
 		ID:        id,
-		Method:    methodGetOrderHistory,
+		Method:    methodGetTrades,
 		Timestamp: timestamp,
 		Params:    params,
 	})
@@ -107,22 +107,22 @@ func (c *client) GetOrderHistory(ctx context.Context, req GetOrderHistoryRequest
 
 	body := api.Request{
 		ID:        id,
-		Method:    methodGetOrderHistory,
+		Method:    methodGetTrades,
 		Nonce:     timestamp,
 		Params:    params,
 		Signature: signature,
 		APIKey:    c.apiKey,
 	}
 
-	var getOrderHistoryResponse GetOrderHistoryResponse
-	statusCode, err := c.requester.Post(ctx, body, methodGetOrderHistory, &getOrderHistoryResponse)
+	var getTradesResponse GetTradesResponse
+	statusCode, err := c.requester.Post(ctx, body, methodGetTrades, &getTradesResponse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute post request: %w", err)
 	}
 
-	if err := c.requester.CheckErrorResponse(statusCode, getOrderHistoryResponse.Code); err != nil {
+	if err := c.requester.CheckErrorResponse(statusCode, getTradesResponse.Code); err != nil {
 		return nil, fmt.Errorf("error received in response: %w", err)
 	}
 
-	return getOrderHistoryResponse.Result.OrderList, nil
+	return getTradesResponse.Result.TradeList, nil
 }

@@ -12,9 +12,15 @@ import (
 
 const (
 	methodGetOrderDetail = "private/get-order-detail"
+
+	LiquidityIndicatorMaker LiquidityIndicator = "MAKER"
+	LiquidityIndicatorTaker LiquidityIndicator = "TAKER"
 )
 
 type (
+	// LiquidityIndicator represents liquidity indicator (MAKER or TAKER).
+	LiquidityIndicator string
+
 	// GetOrderDetailResponse is the base response returned from the private/get-order-detail API.
 	GetOrderDetailResponse struct {
 		// api.BaseResponse is the common response fields.
@@ -51,6 +57,10 @@ type (
 		FeeCurrency string `json:"fee_currency"`
 		// OrderID is the unique identifier for the order.
 		OrderID string `json:"order_id"`
+		// ClientOrderID is the client order id (if provided in request when creating the order).
+		ClientOrderID string `json:"client_order_id"`
+		// LiquidityIndicator is the liquidity indicator for the trade (MAKER/TAKER).
+		LiquidityIndicator LiquidityIndicator `json:"liquidity_indicator"`
 	}
 )
 

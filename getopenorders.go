@@ -69,7 +69,7 @@ type (
 		Quantity float64 `json:"quantity"`
 		// OrderID is the unique identifier for the order.
 		OrderID string `json:"order_id"`
-		// ClientOID is the optional Client order ID (if provided in request).
+		// ClientOID is the optional Client order ID (if provided in request when creating the order).
 		ClientOID string `json:"client_oid"`
 		// CreateTime is the order creation time.
 		CreateTime time.Time `json:"create_time"`

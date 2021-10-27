@@ -24,7 +24,7 @@ import (
 	cdctime "github.com/cshep4/crypto-dot-com-exchange-go/internal/time"
 )
 
-func TestClient_GetOrderHistory_Error(t *testing.T) {
+func TestClient_GetTrades_Error(t *testing.T) {
 	const (
 		apiKey    = "some api key"
 		secretKey = "some secret key"
@@ -33,7 +33,7 @@ func TestClient_GetOrderHistory_Error(t *testing.T) {
 	testErr := errors.New("some error")
 
 	type args struct {
-		req cdcexchange.GetOrderHistoryRequest
+		req cdcexchange.GetTradesRequest
 	}
 	tests := []struct {
 		name string
@@ -46,7 +46,7 @@ func TestClient_GetOrderHistory_Error(t *testing.T) {
 		{
 			name: "returns error when page size is less than 0",
 			args: args{
-				req: cdcexchange.GetOrderHistoryRequest{
+				req: cdcexchange.GetTradesRequest{
 					PageSize: -1,
 				},
 			},
@@ -58,7 +58,7 @@ func TestClient_GetOrderHistory_Error(t *testing.T) {
 		{
 			name: "returns error when page size is greater than 200",
 			args: args{
-				req: cdcexchange.GetOrderHistoryRequest{
+				req: cdcexchange.GetTradesRequest{
 					PageSize: 201,
 				},
 			},
@@ -125,13 +125,13 @@ func TestClient_GetOrderHistory_Error(t *testing.T) {
 					APIKey:    apiKey,
 					SecretKey: secretKey,
 					ID:        id,
-					Method:    cdcexchange.MethodGetOrderHistory,
+					Method:    cdcexchange.MethodGetTrades,
 					Timestamp: now.UnixMilli(),
 					Params:    map[string]interface{}{"page": 0},
 				}).Return("signature", tt.signatureErr)
 			}
 
-			res, err := client.GetOrderHistory(ctx, tt.req)
+			res, err := client.GetTrades(ctx, tt.req)
 			require.Error(t, err)
 
 			assert.Empty(t, res)
@@ -153,7 +153,7 @@ func TestClient_GetOrderHistory_Error(t *testing.T) {
 	}
 }
 
-func TestClient_GetOrderHistory_Success(t *testing.T) {
+func TestClient_GetTrades_Success(t *testing.T) {
 	const (
 		apiKey    = "some api key"
 		secretKey = "some secret key"
@@ -166,32 +166,32 @@ func TestClient_GetOrderHistory_Success(t *testing.T) {
 	now := time.Now().Round(time.Second)
 
 	type args struct {
-		req cdcexchange.GetOrderHistoryRequest
+		req cdcexchange.GetTradesRequest
 	}
 	tests := []struct {
 		name        string
 		handlerFunc func(w http.ResponseWriter, r *http.Request)
 		args
 		expectedParams map[string]interface{}
-		expectedResult []cdcexchange.Order
+		expectedResult []cdcexchange.Trade
 	}{
 		{
-			name: "successfully gets all orders for an instrument",
+			name: "successfully gets all trades for an instrument",
 			args: args{
-				req: cdcexchange.GetOrderHistoryRequest{
+				req: cdcexchange.GetTradesRequest{
 					InstrumentName: instrument,
 					PageSize:       100,
 					Page:           1,
 				},
 			},
 			handlerFunc: func(w http.ResponseWriter, r *http.Request) {
-				assert.Contains(t, r.URL.Path, cdcexchange.MethodGetOrderHistory)
+				assert.Contains(t, r.URL.Path, cdcexchange.MethodGetTrades)
 				t.Cleanup(func() { require.NoError(t, r.Body.Close()) })
 
 				var body api.Request
 				require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
 
-				assert.Equal(t, cdcexchange.MethodGetOrderHistory, body.Method)
+				assert.Equal(t, cdcexchange.MethodGetTrades, body.Method)
 				assert.Equal(t, id, body.ID)
 				assert.Equal(t, apiKey, body.APIKey)
 				assert.Equal(t, now.UnixMilli(), body.Nonce)
@@ -205,21 +205,21 @@ func TestClient_GetOrderHistory_Success(t *testing.T) {
 							"method":"",
 							"code":0,
 							"result":{
-								"order_id":1234,"order_list":[
+								"trade_list":[
 									{
-										"status":"",
-										"reason":"",
-										"side":"",
-										"price":0,
-										"quantity":0,
-										"order_id":"",
-										"client_oid":"some client oid",
-										"create_time":%d,
-										"update_time":%d
-									}
+										"side": "SELL",
+										"instrument_name": "ETH_CRO",
+										"fee": 0.014,
+										"trade_id": "367107655537806900",
+										"create_time": %d,
+										"traded_price": 7,
+										"traded_quantity": 1,
+										"fee_currency": "CRO",
+										"order_id": "367107623521528450"
+								   }
 								]
 							}
-						}`, now.UnixMilli(), now.UnixMilli())
+						}`, now.UnixMilli())
 
 				_, err := w.Write([]byte(res))
 				require.NoError(t, err)
@@ -229,27 +229,33 @@ func TestClient_GetOrderHistory_Success(t *testing.T) {
 				"page_size":       100,
 				"page":            1,
 			},
-			expectedResult: []cdcexchange.Order{
+			expectedResult: []cdcexchange.Trade{
 				{
-					ClientOID:  clientOID,
-					CreateTime: cdctime.Time(now),
-					UpdateTime: cdctime.Time(now),
+					Side:           cdcexchange.OrderSideSell,
+					InstrumentName: "ETH_CRO",
+					Fee:            0.014,
+					TradeID:        "367107655537806900",
+					CreateTime:     cdctime.Time(now),
+					TradedPrice:    7,
+					TradedQuantity: 1,
+					FeeCurrency:    "CRO",
+					OrderID:        "367107623521528450",
 				},
 			},
 		},
 		{
-			name: "successfully gets all orders for all instruments",
+			name: "successfully gets all trades for all instruments",
 			args: args{
-				req: cdcexchange.GetOrderHistoryRequest{},
+				req: cdcexchange.GetTradesRequest{},
 			},
 			handlerFunc: func(w http.ResponseWriter, r *http.Request) {
-				assert.Contains(t, r.URL.Path, cdcexchange.MethodGetOrderHistory)
+				assert.Contains(t, r.URL.Path, cdcexchange.MethodGetTrades)
 				t.Cleanup(func() { require.NoError(t, r.Body.Close()) })
 
 				var body api.Request
 				require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
 
-				assert.Equal(t, cdcexchange.MethodGetOrderHistory, body.Method)
+				assert.Equal(t, cdcexchange.MethodGetTrades, body.Method)
 				assert.Equal(t, id, body.ID)
 				assert.Equal(t, apiKey, body.APIKey)
 				assert.Equal(t, now.UnixMilli(), body.Nonce)
@@ -261,21 +267,21 @@ func TestClient_GetOrderHistory_Success(t *testing.T) {
 							"method":"",
 							"code":0,
 							"result":{
-								"order_list":[
+								"trade_list":[
 									{
-										"status":"",
-										"reason":"",
-										"side":"",
-										"price":0,
-										"quantity":0,
-										"order_id":"",
-										"client_oid":"some client oid",
-										"create_time":%d,
-										"update_time":%d
-									}
+										"side": "SELL",
+										"instrument_name": "ETH_CRO",
+										"fee": 0.014,
+										"trade_id": "367107655537806900",
+										"create_time": %d,
+										"traded_price": 7,
+										"traded_quantity": 1,
+										"fee_currency": "CRO",
+										"order_id": "367107623521528450"
+								   }
 								]
 							}
-						}`, now.UnixMilli(), now.UnixMilli())
+						}`, now.UnixMilli())
 
 				_, err := w.Write([]byte(res))
 				require.NoError(t, err)
@@ -283,18 +289,24 @@ func TestClient_GetOrderHistory_Success(t *testing.T) {
 			expectedParams: map[string]interface{}{
 				"page": 0,
 			},
-			expectedResult: []cdcexchange.Order{
+			expectedResult: []cdcexchange.Trade{
 				{
-					ClientOID:  clientOID,
-					CreateTime: cdctime.Time(now),
-					UpdateTime: cdctime.Time(now),
+					Side:           cdcexchange.OrderSideSell,
+					InstrumentName: "ETH_CRO",
+					Fee:            0.014,
+					TradeID:        "367107655537806900",
+					CreateTime:     cdctime.Time(now),
+					TradedPrice:    7,
+					TradedQuantity: 1,
+					FeeCurrency:    "CRO",
+					OrderID:        "367107623521528450",
 				},
 			},
 		},
 		{
-			name: "successfully gets all orders between timestamps",
+			name: "successfully gets all trades between timestamps",
 			args: args{
-				req: cdcexchange.GetOrderHistoryRequest{
+				req: cdcexchange.GetTradesRequest{
 					Start:    now,
 					End:      now.Add(time.Hour),
 					PageSize: 1,
@@ -302,13 +314,13 @@ func TestClient_GetOrderHistory_Success(t *testing.T) {
 				},
 			},
 			handlerFunc: func(w http.ResponseWriter, r *http.Request) {
-				assert.Contains(t, r.URL.Path, cdcexchange.MethodGetOrderHistory)
+				assert.Contains(t, r.URL.Path, cdcexchange.MethodGetTrades)
 				t.Cleanup(func() { require.NoError(t, r.Body.Close()) })
 
 				var body api.Request
 				require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
 
-				assert.Equal(t, cdcexchange.MethodGetOrderHistory, body.Method)
+				assert.Equal(t, cdcexchange.MethodGetTrades, body.Method)
 				assert.Equal(t, id, body.ID)
 				assert.Equal(t, apiKey, body.APIKey)
 				assert.Equal(t, now.UnixMilli(), body.Nonce)
@@ -323,21 +335,21 @@ func TestClient_GetOrderHistory_Success(t *testing.T) {
 							"method":"",
 							"code":0,
 							"result":{
-								"order_list":[
+								"trade_list":[
 									{
-										"status":"",
-										"reason":"",
-										"side":"",
-										"price":0,
-										"quantity":0,
-										"order_id":"",
-										"client_oid":"some client oid",
-										"create_time":%d,
-										"update_time":%d
-									}
+										"side": "SELL",
+										"instrument_name": "ETH_CRO",
+										"fee": 0.014,
+										"trade_id": "367107655537806900",
+										"create_time": %d,
+										"traded_price": 7,
+										"traded_quantity": 1,
+										"fee_currency": "CRO",
+										"order_id": "367107623521528450"
+								   }
 								]
 							}
-						}`, now.UnixMilli(), now.UnixMilli())
+						}`, now.UnixMilli())
 
 				_, err := w.Write([]byte(res))
 				require.NoError(t, err)
@@ -348,11 +360,17 @@ func TestClient_GetOrderHistory_Success(t *testing.T) {
 				"page_size": 1,
 				"page":      2,
 			},
-			expectedResult: []cdcexchange.Order{
+			expectedResult: []cdcexchange.Trade{
 				{
-					ClientOID:  clientOID,
-					CreateTime: cdctime.Time(now),
-					UpdateTime: cdctime.Time(now),
+					Side:           cdcexchange.OrderSideSell,
+					InstrumentName: "ETH_CRO",
+					Fee:            0.014,
+					TradeID:        "367107655537806900",
+					CreateTime:     cdctime.Time(now),
+					TradedPrice:    7,
+					TradedQuantity: 1,
+					FeeCurrency:    "CRO",
+					OrderID:        "367107623521528450",
 				},
 			},
 		},
@@ -385,12 +403,12 @@ func TestClient_GetOrderHistory_Success(t *testing.T) {
 				APIKey:    apiKey,
 				SecretKey: secretKey,
 				ID:        id,
-				Method:    cdcexchange.MethodGetOrderHistory,
+				Method:    cdcexchange.MethodGetTrades,
 				Timestamp: now.UnixMilli(),
 				Params:    tt.expectedParams,
 			}).Return(signature, nil)
 
-			res, err := client.GetOrderHistory(ctx, tt.req)
+			res, err := client.GetTrades(ctx, tt.req)
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.expectedResult, res)
