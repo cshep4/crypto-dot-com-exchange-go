@@ -13,6 +13,18 @@ import (
 const (
 	UATSandboxBaseURL = uatSandboxBaseURL
 	ProductionBaseURL = productionBaseURL
+
+	// Common API
+	MethodGetInstruments = methodGetInstruments
+	MethodGetTicker = methodGetTicker
+
+	// Spot Trading API
+	MethodGetAccountSummary = methodGetAccountSummary
+	MethodCreateOrder = methodCreateOrder
+	MethodCancelOrder = methodCancelOrder
+	MethodCancelAllOrders = methodCancelAllOrders
+	MethodGetOpenOrders = methodGetOpenOrders
+	MethodGetOrderDetail = methodGetOrderDetail
 )
 
 func (c client) BaseURL() string {
