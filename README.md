@@ -172,6 +172,10 @@ type SpotTradingAPI interface {
     // This call is asynchronous, so the response is simply a confirmation of the request.
     // The user.order subscription can be used to check when the order is successfully created.
     CreateOrder(ctx context.Context, req CreateOrderRequest) (*CreateOrderResult, error)
+    // GetOpenOrders gets all open orders for a particular instrument
+    // Pagination is handled using page size (Default: 20, Max: 200) & number (0-based).
+    // req.InstrumentName can be left blank to get open orders for all instruments.
+    GetOpenOrders(ctx context.Context, req GetOpenOrdersRequest) (*GetOpenOrdersResult, error)
 }
 ```
 
