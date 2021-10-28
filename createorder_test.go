@@ -140,7 +140,7 @@ func TestClient_CreateOrder_Success(t *testing.T) {
 		execInst     = cdcexchange.ExecInstPostOnly
 		triggerPrice = 3.456
 
-		orderID = int64(5678)
+		orderID = "5678"
 	)
 	now := time.Now()
 

@@ -2,7 +2,6 @@ package cdcexchange_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 	cdcexchange "github.com/cshep4/crypto-dot-com-exchange-go"
 	cdcerrors "github.com/cshep4/crypto-dot-com-exchange-go/errors"
 	"github.com/cshep4/crypto-dot-com-exchange-go/internal/api"
+	cdctime "github.com/cshep4/crypto-dot-com-exchange-go/internal/time"
 )
 
 func TestClient_GetTickers_Error(t *testing.T) {
@@ -103,7 +103,7 @@ func TestClient_GetTickers_Success(t *testing.T) {
 		secretKey  = "some secret key"
 		instrument = "some instrument"
 	)
-	now := time.Now()
+	now := time.Now().Round(time.Second)
 
 	type args struct {
 		instrument string
@@ -129,15 +129,25 @@ func TestClient_GetTickers_Success(t *testing.T) {
 				instrumentName := r.URL.Query().Get("instrument_name")
 				assert.Equal(t, instrument, instrumentName)
 
-				res := cdcexchange.SingleTickerResponse{
-					Result: cdcexchange.SingleTickerResult{
-						Data: cdcexchange.Ticker{Instrument: instrument},
-					},
-				}
+				res := fmt.Sprintf(`{
+							"id": 0,
+							"method":"",
+							"code":0,
+							"result":{
+								"data": {
+									"i": "%s",
+									"t": %d
+								}
+							}
+						}`, instrument, now.UnixMilli())
 
-				require.NoError(t, json.NewEncoder(w).Encode(res))
+				_, err := w.Write([]byte(res))
+				require.NoError(t, err)
 			},
-			expectedResult: []cdcexchange.Ticker{{Instrument: instrument}},
+			expectedResult: []cdcexchange.Ticker{{
+				Instrument: instrument,
+				Timestamp:  cdctime.Time(now),
+			}},
 		},
 		{
 			name: "returns all tickers",
@@ -153,15 +163,25 @@ func TestClient_GetTickers_Success(t *testing.T) {
 
 				assert.False(t, r.URL.Query().Has("instrument_name"))
 
-				res := cdcexchange.TickerResponse{
-					Result: cdcexchange.TickerResult{
-						Data: []cdcexchange.Ticker{{Instrument: instrument}},
-					},
-				}
+				res := fmt.Sprintf(`{
+							"id": 0,
+							"method":"",
+							"code":0,
+							"result":{
+								"data": [{
+									"i": "%s",
+									"t": %d
+								}]
+							}
+						}`, instrument, now.UnixMilli())
 
-				require.NoError(t, json.NewEncoder(w).Encode(res))
+				_, err := w.Write([]byte(res))
+				require.NoError(t, err)
 			},
-			expectedResult: []cdcexchange.Ticker{{Instrument: instrument}},
+			expectedResult: []cdcexchange.Ticker{{
+				Instrument: instrument,
+				Timestamp:  cdctime.Time(now),
+			}},
 		},
 	}
 	for _, tt := range tests {

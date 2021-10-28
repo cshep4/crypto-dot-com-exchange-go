@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/cshep4/crypto-dot-com-exchange-go/internal/api"
+	"github.com/cshep4/crypto-dot-com-exchange-go/internal/time"
 )
 
 const (
@@ -55,8 +56,8 @@ type (
 		AskPrice float64 `json:"k"`
 		// LatestTradePrice is the price of the latest trade, 0 if there weren't any trades.
 		LatestTradePrice float64 `json:"a"`
-		// Timestamp is the unix timestamp of the data.
-		Timestamp float64 `json:"t"`
+		// Timestamp is the timestamp of the data.
+		Timestamp time.Time `json:"t"`
 		// Volume24H is the total 24h traded volume.
 		Volume24H float64 `json:"v"`
 		// PriceHigh24h is the price of the 24h highest trade, 0 if there weren't any trades.

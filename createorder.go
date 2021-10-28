@@ -97,7 +97,7 @@ type (
 	// CreateOrderResult is the result returned from the private/create-order API.
 	CreateOrderResult struct {
 		// OrderID is the newly created order ID.
-		OrderID int64 `json:"order_id"`
+		OrderID string `json:"order_id"`
 		// ClientOID is the optional Client order ID (if provided in request).
 		ClientOID string `json:"client_oid"`
 	}
