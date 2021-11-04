@@ -16,7 +16,7 @@ const (
 )
 
 type (
-	// TickerResponse is the base response returned from the public/get-ticker API
+	// TickerResponse is the base response returned from the public/get-ticker API.
 	// when no instrument is specified.
 	TickerResponse struct {
 		// api.BaseResponse is the common response fields.
@@ -25,6 +25,7 @@ type (
 		Result TickerResult `json:"result"`
 	}
 
+	// TickerResult is the result returned from the public/get-ticker API.
 	TickerResult struct {
 		// Data is the returned ticker data for all instruments.
 		Data []Ticker `json:"data"`

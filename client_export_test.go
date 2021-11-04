@@ -16,6 +16,7 @@ const (
 
 	// Common API
 	MethodGetInstruments = methodGetInstruments
+	MethodGetBook        = methodGetBook
 	MethodGetTicker      = methodGetTicker
 
 	// Spot Trading API

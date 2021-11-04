@@ -40,6 +40,10 @@ type (
 		//
 		// Method: public/get-instruments
 		GetInstruments(ctx context.Context) ([]Instrument, error)
+		// GetBook fetches the public order book for a particular instrument and depth.
+		//
+		// Method: public/get-book
+		GetBook(ctx context.Context, instrument string, depth int) (*BookResult, error)
 		// GetTickers fetches the public tickers for an instrument (e.g. BTC_USDT).
 		//
 		// instrument can be left blank to retrieve tickers for ALL instruments.
